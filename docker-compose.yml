@@ -1,0 +1,34 @@
+# Three services built from one image, sharing a named volume that holds the SQLite file.
+services:
+  db-init:            # one-shot: creates the schema and migrates seed JSON -> SQLite
+    build: .
+    command: python migrate.py seed/students.json
+    volumes:
+      - students-data:/data
+
+  api:                # FastAPI service on http://localhost:8000/docs
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - students-data:/data
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  report:             # one-shot console report reading the same database
+    build: .
+    command: python -m app.cli
+    volumes:
+      - students-data:/data
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+
+volumes:
+  students-data:
