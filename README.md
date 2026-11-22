@@ -1,31 +1,44 @@
-# SCM Lab - Students Project
+# Students Service v2.0 (Lab 4 - Re-engineering & Migration)
 
-Demo project for **SEN 401 - Software Configuration Management and Maintenance**.
+Re-engineered from the v1.1 console app into a layered service.
 
-## Project structure
 ```
-app.py              # demo application entry point
-students.py         # Student model (Pydantic), add_student, average/median, table formatter
-utils/helpers.py    # highest_score / lowest_score helpers
-tests/              # pytest unit tests
-requirements.txt    # pydantic, pytest
+app/
+  models.py       # Pydantic models (StudentIn, Student)
+  utils.py        # statistics + table formatting (pure functions)
+  database.py     # SQLite connection + schema
+  controllers.py  # use cases
+  main.py         # FastAPI REST API
+  cli.py          # console report
+migrate.py        # JSON -> SQLite migration
+data/students.json
+tests/            # pytest (API + migration)
+Dockerfile, docker-compose.yml
+docs/             # reverse-engineering notes and dependency diagrams
 ```
 
-## Setup and usage
+## Run locally
 ```
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python app.py
+python migrate.py            # creates data/students.db from data/students.json
+python -m app.cli            # console report
+uvicorn app.main:app --reload   # http://127.0.0.1:8000/docs
 pytest
 ```
-Requires Python 3.12+ (works on 3.10+).
 
-## Branching model
-- `main` stable and protected (PR review required)
-- `dev` integration branch
-- `feature/*` new features
-- `maint/*` maintenance work; `maintenance` holds the Lab 2 changes
+## Run with Docker Compose
+```
+docker compose up --build
+# API:    http://localhost:8000/docs
+# Report: docker compose logs report
+```
 
-## Releases
-- **v1.0** baseline project
-- **v1.1** corrective, adaptive, perfective and preventive maintenance
+## API
+| Method | Path | Description |
+|---|---|---|
+| GET | /health | liveness |
+| GET | /students | list |
+| POST | /students | create `{name, score}` |
+| GET | /students/{id} | read |
+| DELETE | /students/{id} | delete |
+| GET | /stats | count, average, median, highest, lowest |
